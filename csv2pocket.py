@@ -7,6 +7,7 @@ import json
 import ConfigParser
 import os.path
 import csv
+import argparse
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 # app specific key
@@ -132,7 +133,9 @@ def add_to_pocket(pocket_consumer_key, user_access_token,
 
 
 def main():
-    print "csv2pocket"
+    parser = argparse.ArgumentParser(description='A simple tool for taking a CSV file and importing it to Pocket')
+    parser.add_argument('csv_file_name', type=str, help='the CSV file to read from')
+    args = parser.parse_args()
 
     if (os.path.exists(config_file)):
         # load user_access_token from file
@@ -149,7 +152,7 @@ def main():
         config.write(open(config_file, "w"))
 
     # parse csv and add each item to Pocket
-    pocket_items = read_pocket_items_from_csv("test.csv")
+    pocket_items = read_pocket_items_from_csv(args.csv_file_name)
     for p in pocket_items:
         # append csv2pocket tag to all items imported
         extended_tags = p.tags
