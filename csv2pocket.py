@@ -18,6 +18,7 @@ oauth_request_url = "https://getpocket.com/v3/oauth/request"
 oauth_authorize_url = "https://getpocket.com/v3/oauth/authorize"
 web_authorize_url = "https://getpocket.com/auth/authorize?request_token={}&redirect_uri={}"
 pocket_add_url = "https://getpocket.com/v3/add"
+pocket_send_url = "https://getpocket.com/v3/send"
 
 # local webserver setup
 redirect_uri = "http://localhost:{}/authorized"
@@ -125,11 +126,65 @@ def add_to_pocket(pocket_consumer_key, user_access_token,
     req = urllib2.Request(pocket_add_url, pocket_add_post_body,
                           {'Content-Type': 'application/json'})
     resp = urllib2.urlopen(req)
-    if (resp.getcode() == 200):
-        # TODO: handle return data
-        print " --- done"
-    else:
-        print " --- An error happened during add: " + resp.getcode()
+    try:
+        if (resp.getcode() == 200):
+            # TODO: handle return data
+            print " --- done"
+            print resp.info()
+        else:
+            print " --- An error happened during add: " + resp.getcode()
+            print resp.info()
+    except urllib2.HTTPError as e:
+        print " --- An error happened during add: " + str(e.code)
+        print e.hdrs
+
+
+def add_multiple_to_pocket(pocket_consumer_key, user_access_token, items):
+    for p in items:
+        # append csv2pocket tag to all items imported
+        extended_tags = p.tags
+        if (extended_tags == ""):
+            extended_tags = "csv2pocket"
+        else:
+            extended_tags += ",csv2pocket"
+
+        add_to_pocket(pocket_consumer_key, user_access_token,
+                      p.url, p.title, extended_tags)
+
+
+def add_bulk_to_pocket(pocket_consumer_key, user_access_token, items):
+    print "Adding {} items".format(len(items)),
+    bulk_add = []
+    for p in items:
+        # append csv2pocket tag to all items imported
+        extended_tags = p.tags
+        if (extended_tags == ""):
+            extended_tags = "csv2pocket"
+        else:
+            extended_tags += ",csv2pocket"
+
+        bulk_add.append({"action": "add",
+                         "url": p.url,
+                         "title": p.title,
+                         "tags": extended_tags})
+
+    pocket_add_post_body = json.dumps(
+        {"consumer_key": pocket_consumer_key,
+         "access_token": user_access_token,
+         "actions": bulk_add})
+
+    req = urllib2.Request(pocket_add_url, pocket_add_post_body,
+                          {'Content-Type': 'application/json'})
+    try:
+        resp = urllib2.urlopen(req)
+        if (resp.getcode() == 200):
+            # TODO: handle return data
+            print " --- done"
+        else:
+            print " --- An error happened during add: " + resp.getcode()
+    except urllib2.HTTPError as e:
+        print " --- An error happened during add: " + str(e.code)
+        print e.hdrs
 
 
 def main():
@@ -153,16 +208,10 @@ def main():
 
     # parse csv and add each item to Pocket
     pocket_items = read_pocket_items_from_csv(args.csv_file_name)
-    for p in pocket_items:
-        # append csv2pocket tag to all items imported
-        extended_tags = p.tags
-        if (extended_tags == ""):
-            extended_tags = "csv2pocket"
-        else:
-            extended_tags += ",csv2pocket"
-
-        add_to_pocket(pocket_consumer_key, user_access_token,
-                      p.url, p.title, extended_tags)
+    # add_bulk_to_pocket(pocket_consumer_key, user_access_token,
+    #                    pocket_items)
+    add_multiple_to_pocket(pocket_consumer_key, user_access_token,
+                           pocket_items)
 
 
 if __name__ == "__main__":
