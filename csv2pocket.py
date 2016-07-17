@@ -106,7 +106,9 @@ def main():
 
     if (os.path.exists(config_file)):
         # load user_access_token from file
-        pass
+        config = ConfigParser.RawConfigParser()
+        config.readfp(open(config_file, "r"))
+        user_access_token = config.get("main", "user_access_token")
     else:
         # authorize and save user_access_token to avoid making
         # authorization again
