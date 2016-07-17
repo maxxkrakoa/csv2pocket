@@ -6,6 +6,7 @@ import urllib2
 import json
 import ConfigParser
 import os.path
+import csv
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 # app specific key
@@ -50,6 +51,33 @@ class getHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         return
+
+
+class PocketItem:
+    """An item to put in Pocket"""
+
+    def __init__(self, url, title, tags):
+        self.url = url
+        self.title = title
+        self.tags = tags
+
+
+def read_pocket_items_from_csv(csv_file_name):
+    pocket_items = []
+
+    with open(csv_file_name, "r") as csvfile:
+        item_reader = csv.reader(csvfile)
+        for row in item_reader:
+            if (len(row) == 1):
+                # just a url
+                pocket_items.append(PocketItem(row[0], "", ""))
+            elif (len(row) == 2):
+                # url and title
+                pocket_items.append(PocketItem(row[0], row[1], ""))
+            else:  # assume len == 3
+                # url and title and tags
+                pocket_items.append(PocketItem(row[0], row[1], row[2]))
+    return pocket_items
 
 
 def do_pocket_auth():
@@ -120,9 +148,18 @@ def main():
         config.set("main", "user_access_token", user_access_token)
         config.write(open(config_file, "w"))
 
-    # TODO: parse csv
-    add_to_pocket(pocket_consumer_key, user_access_token,
-                  "http://www.slashdot.org", "slashdot", "csv2pocket")
+    # parse csv and add each item to Pocket
+    pocket_items = read_pocket_items_from_csv("test.csv")
+    for p in pocket_items:
+        # append csv2pocket tag to all items imported
+        extended_tags = p.tags
+        if (extended_tags == ""):
+            extended_tags = "csv2pocket"
+        else:
+            extended_tags += ",csv2pocket"
+
+        add_to_pocket(pocket_consumer_key, user_access_token,
+                      p.url, p.title, extended_tags)
 
 
 if __name__ == "__main__":
