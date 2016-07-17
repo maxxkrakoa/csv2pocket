@@ -27,6 +27,7 @@ user_authorized_access = False
 # config location
 config_file = os.path.expanduser("~/.csv2pocket")
 
+
 def set_user_authorized_access(b):
     global user_authorized_access
     user_authorized_access = b
@@ -101,6 +102,7 @@ def add_to_pocket(pocket_consumer_key, user_access_token,
     else:
         print " --- An error happened during add: " + resp.getcode()
 
+
 def main():
     print "csv2pocket"
 
@@ -121,6 +123,7 @@ def main():
     # TODO: parse csv
     add_to_pocket(pocket_consumer_key, user_access_token,
                   "http://www.slashdot.org", "slashdot", "csv2pocket")
+
 
 if __name__ == "__main__":
     main()
