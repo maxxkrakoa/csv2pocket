@@ -4,6 +4,10 @@ import webbrowser
 import urllib
 import urllib2
 import json
+import ConfigParser
+import os.path
+import csv
+import argparse
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 # app specific key
@@ -21,6 +25,9 @@ port_number = 54321  # TODO: randomize this to avoid port collision
 
 # user stuff
 user_authorized_access = False
+
+# config location
+config_file = os.path.expanduser("~/.csv2pocket")
 
 
 def set_user_authorized_access(b):
@@ -45,6 +52,33 @@ class getHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         return
+
+
+class PocketItem:
+    """An item to put in Pocket"""
+
+    def __init__(self, url, title, tags):
+        self.url = url
+        self.title = title
+        self.tags = tags
+
+
+def read_pocket_items_from_csv(csv_file_name):
+    pocket_items = []
+
+    with open(csv_file_name, "r") as csvfile:
+        item_reader = csv.reader(csvfile)
+        for row in item_reader:
+            if (len(row) == 1):
+                # just a url
+                pocket_items.append(PocketItem(row[0], "", ""))
+            elif (len(row) == 2):
+                # url and title
+                pocket_items.append(PocketItem(row[0], row[1], ""))
+            else:  # assume len == 3
+                # url and title and tags
+                pocket_items.append(PocketItem(row[0], row[1], row[2]))
+    return pocket_items
 
 
 def do_pocket_auth():
@@ -97,14 +131,39 @@ def add_to_pocket(pocket_consumer_key, user_access_token,
     else:
         print " --- An error happened during add: " + resp.getcode()
 
-def main():
-    print "csv2pocket"
-    # TODO: save user_access_token to avoid making authorization again
-    user_access_token = do_pocket_auth()
 
-    # TODO: parse csv
-    add_to_pocket(pocket_consumer_key, user_access_token,
-                  "http://www.slashdot.org", "slashdot", "csv2pocket")
+def main():
+    parser = argparse.ArgumentParser(description='A simple tool for taking a CSV file and importing it to Pocket')
+    parser.add_argument('csv_file_name', type=str, help='the CSV file to read from')
+    args = parser.parse_args()
+
+    if (os.path.exists(config_file)):
+        # load user_access_token from file
+        config = ConfigParser.RawConfigParser()
+        config.readfp(open(config_file, "r"))
+        user_access_token = config.get("main", "user_access_token")
+    else:
+        # authorize and save user_access_token to avoid making
+        # authorization again
+        user_access_token = do_pocket_auth()
+        config = ConfigParser.RawConfigParser()
+        config.add_section("main")
+        config.set("main", "user_access_token", user_access_token)
+        config.write(open(config_file, "w"))
+
+    # parse csv and add each item to Pocket
+    pocket_items = read_pocket_items_from_csv(args.csv_file_name)
+    for p in pocket_items:
+        # append csv2pocket tag to all items imported
+        extended_tags = p.tags
+        if (extended_tags == ""):
+            extended_tags = "csv2pocket"
+        else:
+            extended_tags += ",csv2pocket"
+
+        add_to_pocket(pocket_consumer_key, user_access_token,
+                      p.url, p.title, extended_tags)
+
 
 if __name__ == "__main__":
     main()
