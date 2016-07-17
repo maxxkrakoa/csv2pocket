@@ -11,7 +11,7 @@ import argparse
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 # app specific key
-pocket_consumer_key = "56591-da2824b2f016fe024988b0c6"
+pocket_consumer_key = "56619-e39b73d25753a7667856d855"
 
 # basic Pocket API endpoints
 oauth_request_url = "https://getpocket.com/v3/oauth/request"
