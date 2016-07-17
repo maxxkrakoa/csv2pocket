@@ -4,6 +4,8 @@ import webbrowser
 import urllib
 import urllib2
 import json
+import ConfigParser
+import os.path
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 # app specific key
@@ -22,6 +24,8 @@ port_number = 54321  # TODO: randomize this to avoid port collision
 # user stuff
 user_authorized_access = False
 
+# config location
+config_file = os.path.expanduser("~/.csv2pocket")
 
 def set_user_authorized_access(b):
     global user_authorized_access
@@ -99,8 +103,20 @@ def add_to_pocket(pocket_consumer_key, user_access_token,
 
 def main():
     print "csv2pocket"
-    # TODO: save user_access_token to avoid making authorization again
-    user_access_token = do_pocket_auth()
+
+    if (os.path.exists(config_file)):
+        # load user_access_token from file
+        config = ConfigParser.RawConfigParser()
+        config.readfp(open(config_file, "r"))
+        user_access_token = config.get("main", "user_access_token")
+    else:
+        # authorize and save user_access_token to avoid making
+        # authorization again
+        user_access_token = do_pocket_auth()
+        config = ConfigParser.RawConfigParser()
+        config.add_section("main")
+        config.set("main", "user_access_token", user_access_token)
+        config.write(open(config_file, "w"))
 
     # TODO: parse csv
     add_to_pocket(pocket_consumer_key, user_access_token,
