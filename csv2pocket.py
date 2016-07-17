@@ -173,7 +173,7 @@ def add_bulk_to_pocket(pocket_consumer_key, user_access_token, items):
          "access_token": user_access_token,
          "actions": bulk_add})
 
-    req = urllib2.Request(pocket_add_url, pocket_add_post_body,
+    req = urllib2.Request(pocket_send_url, pocket_add_post_body,
                           {'Content-Type': 'application/json'})
     try:
         resp = urllib2.urlopen(req)
@@ -208,10 +208,8 @@ def main():
 
     # parse csv and add each item to Pocket
     pocket_items = read_pocket_items_from_csv(args.csv_file_name)
-    # add_bulk_to_pocket(pocket_consumer_key, user_access_token,
-    #                    pocket_items)
-    add_multiple_to_pocket(pocket_consumer_key, user_access_token,
-                           pocket_items)
+    add_bulk_to_pocket(pocket_consumer_key, user_access_token,
+                       pocket_items)
 
 
 if __name__ == "__main__":
